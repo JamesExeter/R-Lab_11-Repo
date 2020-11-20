@@ -1,0 +1,108 @@
+---
+title: "Assignment11"
+author: "James B"
+date: "17/11/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(palmerpenguins)
+library(tibble)
+```
+
+# Part 1
+Explain the following concepts:
+
+1. Statistical hypothesis: Frames the research question we want to answer in terms of the parameters of a statistical model. It enables us to answer the research question by testing it on the basis of observed data modeled as the realised values taken by a collection of random variables.
+
+2. Null hypothesis: The default position we take when attempting to carry out a hypothesis test, typically we declare the absence of any phenomena. 
+
+3. Alternative hypothesis: Something of interest that differs from the null, generally a phenomena we wish to prove 
+
+4. Test statistic: Is a function of the data which has two characteristics:
+a) Has a known distribution under the null hypothesis $H_0$, e.g. a gaussian distribution.
+b) Often takes on large or extreme values under the alternative hypothesis $H_1$.
+The test statistic takes on typical values for $H_0$ -> we accept the null hypothesis $H_0$.
+The test statistic takes on non-typical values for $H_1$ -> we reject the null & accept the alternative $H_1$. 
+
+5. Type 1 error: Where we reject the null hypothesis despite it being actually correct. We are generally more cautious about Type 1 errors than Type 2 errors since the null hypothesis is our default.
+
+6. Type 2 error: Where we fail to reject the null hypothesis when the alternative is actually correct.
+
+7. The size of a test: The test size of a test $\alpha_{test}$ is the probability of Type 1 error under the null hypothesis:
+$\alpha_{test} = P(Type\ 1\ error\ |\ H_0\ is\ true)$
+
+8. The power of a test: The power of a test is 1 - $\beta_{test}$ where $\beta_{test}$ is the probability of Type 2 error under the alternative: $\beta_{test} = P(Type\ 2\ error\ |\ H_1\ is\ true).$
+
+9, The significance level: The significance of a test $\alpha$ is an upper bound on the test size $\alpha_{test} \leq \alpha$. A valid hypothesis test requires that the significance level be chosen in advance of seeing the data. The lower the significance $\alpha$, the lower the power 1 - $\beta_{test}$. It is the probability of rejecting the null hypothesis give that it is true (a type 1 error), usually set at 5%.
+
+10. The p-value: The probability of obtaining test results at least as extreme as the results actually observed, under the assumption that the null hypothesis $H_0$ is correct. Given test statistic $\hat T$, it is the probability that $\hat T$ is at least as extreme as $\tau$ under the null $H_0$.
+
+# Part 2
+```{r part2, echo=FALSE}
+bill_adelie <- penguins %>%
+  filter(species=="Adelie") %>%
+  pull(bill_length_mm) # extract the species and the column we want
+
+tibble(bill_adelie) %>% ggplot(aes(x=bill_adelie))+geom_density()+
+  theme_bw()+labs(x="Weight (grams)", y="Density") # plot density distribution
+
+tibble(bill_adelie) %>% ggplot(aes(sample=bill_adelie))+stat_qq()+
+  stat_qq_line(color="blue")+theme_bw() # plot qq plot
+
+t.test(x=bill_adelie, mu=40, conf.level=0.99) # perform hypothesis test with mean of 40 and 99% confidence
+```
+For this hypothesis test we must assume that the data is identically and independently distributed, typically in a gaussian pattern, by observing the above graphs we can indeed confirm that these assumptions are well met. 
+
+The hypothesis test carried out rejects the null hypothesis that the average bill length is 40mm, when it is actually significantly lower.
+
+# Part 3
+```{r part3, echo=FALSE}
+library(Stat2Data)
+data("Airlines") # load data library
+
+delta_arrivals <- Airlines %>%
+  filter(airline == "Delta", airport == "ORD") %>% # filter out specifically the rows we want
+  pull(OnTime) # extract column
+
+delta_arrivals <- as.vector(delta_arrivals) #vectorize
+
+sample_size <- length(delta_arrivals) # sample size
+num_successes <- length(which(delta_arrivals == "yes")) # count number of yes results
+
+binom.test(x=num_successes, n=sample_size, p=0.875, alternative="two.sided") # carry out binomial test with p of 0.875
+``` 
+The calculated p value is given as 0.0776 which is greater than the significance level of 0.05 so it can be concluded that we accept the null hypothesis $H_0$ and reject the alternative hypothesis $H_1$. The value of 0.875 is also within the 95% confidence interval as well confirm our results.
+
+The assumptions for a binomial hypothesis test are the following:
+
+1) Items are dichotomous, i.e. for each item there are two outcomes only, and the data type is nominal / categorical, in this case it refers to whether a plane was on time or not.
+
+2) The sample size is significantly less than the population
+
+3) The sample is a fair representation of the population
+
+4) Sample items are independent and identically distributed
+
+# Part 4
+```{r part4, echo=FALSE}
+# a function that carries out a two sided hypothesis test taking in data and a null hypothesis value
+two_sided_t_test <- function(data, hypo_val){  
+  sample_size <- length(data) # sample size
+  sample_mean <- mean(data, na.rm=TRUE) # sample mean
+  sample_sd <- sd(data, na.rm=TRUE) # sample sd
+  test_stat <- (sample_mean-hypo_val)/(sample_sd/sqrt(sample_size)) # calculate the test statistic
+  return (2*(1-pt(abs(test_stat), df=sample_size-1))) # return the p value
+}
+
+bill_adelie <- penguins %>%
+  filter(species=="Adelie") %>%
+  pull(bill_length_mm) # extract the species and the column we want
+
+two_sided_t_test(bill_adelie, 40) # use function to get output
+t.test(x=bill_adelie, mu=40)$p.value
+
+```
+Here we can see that the two values are nearly identical, showing that the function has been implemented corrected
